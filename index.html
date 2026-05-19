@@ -23,8 +23,8 @@
     <button onclick="sendMessage()">傳送</button>
 
     <script>
-        // ⚠️ 請記得把下面的字串換成您在 Google AI Studio 複製的 API 金鑰
-        const API_KEY = "AIzaSyAajwF_slaCwUUGziXXFkdYTdKZbsV2VBQ"; 
+        // ⚠️ 測試用：直接在前端放 API KEY 風險很高，正式上線應該放在後端
+        const API_KEY = "YOUR_API_KEY_HERE"; 
 
         async function sendMessage() {
             const userInput = document.getElementById("userInput");
@@ -33,7 +33,7 @@
 
             if (!text) return;
 
-            // 顯示使用者的訊息
+            // 顯示使用者訊息
             chatBox.innerHTML += `<div class="user-msg"><b>你:</b> ${text}</div>`;
             userInput.value = "";
             chatBox.scrollTop = chatBox.scrollHeight;
@@ -44,29 +44,37 @@
             chatBox.scrollTop = chatBox.scrollHeight;
 
             try {
-                // 改用穩定支援的 gemini-1.5-flash 模型與正確的 v1beta 網址
-                const url = `https://googleapis.com{API_KEY}`;
+                // 正確的 Gemini API URL
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateMessage?key=${API_KEY}`;
                 
+                // 呼叫 API
                 const response = await fetch(url, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [{ text: text }]
-                        }]
+                        prompt: {
+                            messages: [
+                                {
+                                    author: "user",
+                                    content: [
+                                        { type: "text", text: text }
+                                    ]
+                                }
+                            ]
+                        }
                     })
                 });
 
                 const data = await response.json();
-                
-                // 🛠️ 修正後的安全解析 JSON 路徑
-                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
-                    const aiReply = data.candidates[0].content.parts[0].text;
+
+                // 解析回覆
+                const aiReply = data?.response?.candidates?.[0]?.content?.[0]?.text;
+
+                if (aiReply) {
                     document.getElementById(loadingId).innerHTML = `<b>Gemini:</b> ${aiReply}`;
                 } else if (data.error) {
-                    // 如果是 API Key 填錯或沒開通，會顯示 Google 的錯誤原因
                     document.getElementById(loadingId).innerHTML = `<b>API 錯誤:</b> ${data.error.message}`;
                 } else {
                     document.getElementById(loadingId).innerHTML = `<b>解析錯誤:</b> 回傳格式不符合預期。`;
@@ -76,7 +84,7 @@
                 console.error(error);
                 document.getElementById(loadingId).innerHTML = `<b>網路錯誤:</b> ${error.message}`;
             }
-            
+
             chatBox.scrollTop = chatBox.scrollHeight;
         }
     </script>
