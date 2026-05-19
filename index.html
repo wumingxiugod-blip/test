@@ -53,12 +53,14 @@
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({
+                const body = JSON.stringify({
                         prompt: {
                             messages: [
                                 {
                                     author: "user",
-                                    text: text
+                                    content: [
+                                        { type: "text", text: text }  // 這樣才對
+                                    ]
                                 }
                             ]
                         }
