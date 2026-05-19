@@ -1,9 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-    <title>我的超牛逼作業</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的 Gemini AI 網頁</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .chat-box { border: 1px solid #ccc; padding: 15px; height: 300px; overflow-y: auto; margin-bottom: 10px; background: #f9f9f9; }
+        .user-msg { color: blue; margin-bottom: 10px; }
+        .ai-msg { color: green; margin-bottom: 10px; }
+        input[type="text"] { width: 75%; padding: 10px; }
+        button { padding: 10px 20px; }
+    </style>
 </head>
 <body>
-    <h1>網頁順利上線了！</h1>
+
+    <h2>與 Gemini 對話 (終極修正版)</h2>
+    
+    <div class="chat-box" id="chatBox"></div>
+    
+    <input type="text" id="userInput" placeholder="請輸入問題...">
+    <button onclick="sendMessage()">傳送</button>
+
+    <script>
+        // ⚠️ 請記得把下面的字串換成您在 Google AI Studio 複製的 API 金鑰
+        const API_KEY = "AIzaSyAajwF_slaCwUUGziXXFkdYTdKZbsV2VBQ"; 
+
+        async function sendMessage() {
+            const userInput = document.getElementById("userInput");
+            const chatBox = document.getElementById("chatBox");
+            const text = userInput.value.trim();
+
+            if (!text) return;
+
+            // 顯示使用者的訊息
+            chatBox.innerHTML += `<div class="user-msg"><b>你:</b> ${text}</div>`;
+            userInput.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // 顯示「思考中...」提示
+            const loadingId = "loading-" + Date.now();
+            chatBox.innerHTML += `<div class="ai-msg" id="${loadingId}"><b>Gemini:</b> 思考中...</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // 改用穩定支援的 gemini-1.5-flash 模型與正確的 v1beta 網址
+                const url = `https://googleapis.com{API_KEY}`;
+                
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: text }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                
+                // 🛠️ 修正後的安全解析 JSON 路徑
+                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
+                    const aiReply = data.candidates[0].content.parts[0].text;
+                    document.getElementById(loadingId).innerHTML = `<b>Gemini:</b> ${aiReply}`;
+                } else if (data.error) {
+                    // 如果是 API Key 填錯或沒開通，會顯示 Google 的錯誤原因
+                    document.getElementById(loadingId).innerHTML = `<b>API 錯誤:</b> ${data.error.message}`;
+                } else {
+                    document.getElementById(loadingId).innerHTML = `<b>解析錯誤:</b> 回傳格式不符合預期。`;
+                }
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById(loadingId).innerHTML = `<b>網路錯誤:</b> ${error.message}`;
+            }
+            
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
 </body>
 </html>
